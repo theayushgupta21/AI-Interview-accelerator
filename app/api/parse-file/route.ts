@@ -75,10 +75,24 @@ export async function POST(request: NextRequest) {
     let extractedText = "";
 
     // PDF
- if (extension === "pdf") {
-  const result = await pdfParse(buffer);
-  extractedText = result.text;
-}
+
+    // PDF
+    if (extension === "pdf") {
+      try {
+        const result = await pdfParse(buffer);
+        extractedText = result.text;
+      } catch (error) {
+        console.error("[PDF Parse Error]", error);
+
+        return NextResponse.json(
+          {
+            error:
+              "This PDF could not be read. Try opening it and saving or printing it as a new PDF, then upload the new copy.",
+          },
+          { status: 422 }
+        );
+      }
+    }
 
     // DOCX
     if (extension === "docx") {

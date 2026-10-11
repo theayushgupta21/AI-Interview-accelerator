@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type InterviewType = "mixed" | "technical" | "hr" | "project";
+type InterviewLevel = "screening" | "competency" | "deep-dive";
 type Difficulty = "easy" | "medium" | "hard";
 
 export default function InterviewPage() {
@@ -15,6 +16,8 @@ export default function InterviewPage() {
   const [difficulty, setDifficulty] =
     useState<Difficulty>("medium");
   const [questionCount, setQuestionCount] = useState("10");
+  const [interviewLevel, setInterviewLevel] =
+  useState<InterviewLevel>("screening");
 
   const [jd, setJd] = useState("");
   const [resume, setResume] = useState("");
@@ -51,10 +54,11 @@ export default function InterviewPage() {
     }
 
     const config = {
-      interviewType,
-      difficulty,
-      questionCount: Number(questionCount),
-    };
+  interviewType,
+  difficulty,
+  questionCount: Number(questionCount),
+  interviewLevel,
+};
 
     try {
       sessionStorage.setItem(
@@ -130,6 +134,32 @@ export default function InterviewPage() {
               <h2 className="text-lg font-semibold">
                 Configure your interview
               </h2>
+              
+<div>
+  <label htmlFor="interviewLevel" className="mb-2 block text-sm font-medium">
+    Interview Level
+  </label>
+
+  <select
+    id="interviewLevel"
+    value={interviewLevel}
+    onChange={(event) =>
+      setInterviewLevel(event.target.value as InterviewLevel)
+    }
+    className={inputClass}
+  >
+    <option value="screening">
+      Screening — Resume, motivation & role fit
+    </option>
+    <option value="competency">
+      Competency — Technical skills, projects & problem-solving
+    </option>
+    <option value="deep-dive">
+      Deep Dive — Architecture, trade-offs & challenging follow-ups
+    </option>
+  </select>
+</div>
+
 
               <div className="mt-6">
                 <label

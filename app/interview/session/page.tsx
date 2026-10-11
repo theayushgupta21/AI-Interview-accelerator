@@ -1,8 +1,19 @@
-
 "use client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+
+import { speakText, stopSpeaking } from "@/lib/speech";
+
+
+type InterviewType = "mixed" | "technical" | "hr" | "project";
+type Difficulty = "easy" | "medium" | "hard";
+
+type InterviewConfig = {
+  interviewType: InterviewType;
+  difficulty: Difficulty;
+  questionCount: 5 | 10 | 15;
+};
 
 type InterviewQuestion = {
   category: "technical" | "project" | "behavioral";
@@ -57,6 +68,14 @@ export default function InterviewSessionPage() {
   const [jdText, setJdText] = useState("");
   const [resumeText, setResumeText] = useState("");
 
+  
+const [config, setConfig] = useState<InterviewConfig>({
+  interviewType: "mixed",
+  difficulty: "medium",
+  questionCount: 10,
+});
+
+
   const [questions, setQuestions] = useState<SessionQuestion[]>([]);
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [evaluations, setEvaluations] = useState<EvaluationMap>({});
@@ -71,42 +90,72 @@ export default function InterviewSessionPage() {
   const [loaded, setLoaded] = useState(false);
   const [finished, setFinished] = useState(false);
 
-  useEffect(() => {
-    try {
-      const jd = sessionStorage.getItem("ai-interview-jd") ?? "";
-      const resume =
-        sessionStorage.getItem("ai-interview-resume") ?? "";
+  
+useEffect(() => {
+  try {
+    const jd = sessionStorage.getItem("ai-interview-jd") ?? "";
+    const resume =
+      sessionStorage.getItem("ai-interview-resume") ?? "";
 
-      setJdText(jd);
-      setResumeText(resume);
+    setJdText(jd);
+    setResumeText(resume);
 
-      const savedAnswers = sessionStorage.getItem(ANSWERS_KEY);
-      const savedQuestions = sessionStorage.getItem(QUESTIONS_KEY);
-      const savedEvaluations =
-        sessionStorage.getItem(EVALUATIONS_KEY);
+    // Restore interview configuration
+    const savedConfig = sessionStorage.getItem("ai-interview-config");
 
-      if (savedAnswers) {
-        setAnswers(JSON.parse(savedAnswers) as AnswerMap);
+    if (savedConfig) {
+      try {
+        const parsed: unknown = JSON.parse(savedConfig);
+
+        if (parsed && typeof parsed === "object") {
+          const value = parsed as Record<string, unknown>;
+
+          if (
+            ["mixed", "technical", "hr", "project"].includes(
+              String(value.interviewType)
+            ) &&
+            ["easy", "medium", "hard"].includes(
+              String(value.difficulty)
+            ) &&
+            [5, 10, 15].includes(Number(value.questionCount))
+          ) {
+            setConfig({
+              interviewType: value.interviewType as InterviewType,
+              difficulty: value.difficulty as Difficulty,
+              questionCount: Number(value.questionCount) as 5 | 10 | 15,
+            });
+          }
+        }
+      } catch {
+        console.warn("Saved interview configuration is invalid.");
       }
-
-      if (savedQuestions) {
-        setQuestions(
-          JSON.parse(savedQuestions) as SessionQuestion[]
-        );
-      }
-
-      if (savedEvaluations) {
-        setEvaluations(
-          JSON.parse(savedEvaluations) as EvaluationMap
-        );
-      }
-    } catch {
-      setError("Could not restore the saved interview session.");
-    } finally {
-      setLoading(false);
-      setLoaded(true);
     }
-  }, []);
+
+    // Restore saved interview session
+    const savedAnswers = sessionStorage.getItem(ANSWERS_KEY);
+    const savedQuestions = sessionStorage.getItem(QUESTIONS_KEY);
+    const savedEvaluations =
+      sessionStorage.getItem(EVALUATIONS_KEY);
+
+    if (savedAnswers) {
+      setAnswers(JSON.parse(savedAnswers) as AnswerMap);
+    }
+
+    if (savedQuestions) {
+      setQuestions(JSON.parse(savedQuestions) as SessionQuestion[]);
+    }
+
+    if (savedEvaluations) {
+      setEvaluations(JSON.parse(savedEvaluations) as EvaluationMap);
+    }
+  } catch {
+    setError("Could not restore the saved interview session.");
+  } finally {
+    setLoading(false);
+    setLoaded(true);
+  }
+}, []);
+
 
   useEffect(() => {
     if (!loaded) return;
@@ -147,7 +196,15 @@ export default function InterviewSessionPage() {
       const response = await fetch("/api/generate-interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jdText, resumeText }),
+        
+body: JSON.stringify({
+  jdText,
+  resumeText,
+  interviewType: config.interviewType,
+  difficulty: config.difficulty,
+  questionCount: config.questionCount,
+}),
+
       });
 
       const result =
@@ -176,7 +233,7 @@ export default function InterviewSessionPage() {
     } finally {
       setGenerating(false);
     }
-  }, [jdText, resumeText]);
+  }, [jdText, resumeText, config]);
 
   const submitAnswer = async () => {
     const question = questions[currentIndex];
@@ -536,6 +593,23 @@ export default function InterviewSessionPage() {
         <h2 className="text-xl font-semibold sm:text-2xl">
           {currentQuestion.question}
         </h2>
+        
+<button
+  type="button"
+  onClick={() => speakText(currentQuestion.question)}
+  className="rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted"
+>
+  🔊 Read Question
+</button>
+
+<button
+  type="button"
+  onClick={stopSpeaking}
+  className="ml-2 rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted"
+>
+  ⏹ Stop Voice
+</button>
+
 
         {currentQuestion.isFollowUp && currentQuestion.followUpReason && (
           <p className="text-sm text-gray-600">

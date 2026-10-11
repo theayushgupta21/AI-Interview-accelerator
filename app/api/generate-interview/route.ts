@@ -3,9 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { generateJSON } from "@/lib/llm";
-import {
-  interviewQuestionsSchema,
-} from "@/lib/schemas";
+import { interviewQuestionSchema } from "@/lib/schemas";
 import {
   INTERVIEW_SYSTEM_PROMPT,
   buildInterviewPrompt,
@@ -14,6 +12,16 @@ import {
 const requestSchema = z.object({
   jdText: z.string().trim().min(50).max(30000),
   resumeText: z.string().trim().min(50).max(30000),
+  interviewType: z
+    .enum(["mixed", "technical", "hr", "project"])
+    .default("mixed"),
+  difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
+  questionCount: z
+    .union([z.literal(5), z.literal(10), z.literal(15)])
+    .default(10),
+  interviewLevel: z
+    .enum(["screening", "competency", "deep-dive"])
+    .default("screening"),
 });
 
 export async function POST(request: Request) {
@@ -26,23 +34,37 @@ export async function POST(request: Request) {
         {
           success: false,
           error:
-            "Please provide a valid job description and resume, each containing at least 50 characters and no more than 30,000 characters.",
+            "Invalid request. Provide a valid job description and resume (50–30,000 characters each), plus valid interview settings.",
         },
         { status: 400 }
       );
     }
-    console.log("[Interview Debug] Schema imported:", {
-  exists: Boolean(interviewQuestionsSchema),
-  safeParseType: typeof interviewQuestionsSchema?.safeParse,
-});
+
+    const {
+      jdText,
+      resumeText,
+      interviewType,
+      difficulty,
+      questionCount,
+      interviewLevel,
+    } = input.data;
+
+    const dynamicSchema = z.object({
+      role_title: z.string().min(1),
+      questions: z
+        .array(interviewQuestionSchema)
+        .length(questionCount),
+    });
 
     const result = await generateJSON({
-      schema: interviewQuestionsSchema,
+      schema: dynamicSchema,
       systemPrompt: INTERVIEW_SYSTEM_PROMPT,
-      userPrompt: buildInterviewPrompt(
-        input.data.jdText,
-        input.data.resumeText
-      ),
+      userPrompt: buildInterviewPrompt(jdText, resumeText, {
+        interviewType,
+        difficulty,
+        questionCount,
+        interviewLevel,
+      }),
     });
 
     return NextResponse.json({
@@ -51,17 +73,15 @@ export async function POST(request: Request) {
       provider: result.provider,
     });
   } catch (error) {
+    console.error("[Generate Interview API Error]", error);
+
     const message =
       error instanceof Error
         ? error.message
-        : "Interview question generation failed.";
-
-    console.error("[Interview Generation]", message);
+        : "Unknown interview generation error";
 
     const isRateLimited =
-      /rate.limit|rate_limit_exceeded|tokens per minute|\b429\b/i.test(
-        message
-      );
+      /rate.?limit|429|tokens per minute|tpm/i.test(message);
 
     return NextResponse.json(
       {

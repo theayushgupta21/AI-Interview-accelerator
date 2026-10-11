@@ -32,10 +32,12 @@ export const skillMatchSchema = z.object({
 
 export const jdAnalysisSchema = z.object({
   role_title: z.string().min(1),
-
-  key_responsibilities: z
-    .array(z.string())
-    .min(1),
+  
+key_responsibilities: z
+  .array(z.string().min(1))
+  .max(10)
+  .default([])
+  .transform((items) => items.slice(0, 10)),
 
   required_skills: z
     .array(z.string()),
