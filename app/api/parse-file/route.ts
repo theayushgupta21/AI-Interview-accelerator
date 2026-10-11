@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     // Keep this variable outside all file-type conditions.
     let extractedText = "";
 
-    // PDF
+   
 
     // PDF
     if (extension === "pdf") {
