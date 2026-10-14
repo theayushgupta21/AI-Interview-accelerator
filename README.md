@@ -12,6 +12,8 @@ Upload your resume, paste a job description, and practise with role-specific que
 ![Groq](https://img.shields.io/badge/LLM-Groq_API-F55036)
 ![Status](https://img.shields.io/badge/status-in_development-orange)
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Visit-success?logo=vercel&logoColor=white)](https://ai-interview-accelerator-delta.vercel.app/)
+
 </div>
 
 ---
@@ -24,10 +26,11 @@ Most interview prep tools hand you a generic list of questions. **AI Interview A
 
 **The approach:** analyse the resume and job description, find the gaps, generate targeted questions, evaluate your answers with an LLM, and ask deeper follow-ups based on what you say.
 
-<!--
-Add a demo link and screenshots here once available:
+## 🌐 Live Demo
 
-**Live demo:** https://your-demo-link
+**👉 [ai-interview-accelerator-delta.vercel.app](https://ai-interview-accelerator-delta.vercel.app/)**
+
+<!-- Add screenshots here when available:
 ![Home](./public/screenshots/home.png)
 -->
 
