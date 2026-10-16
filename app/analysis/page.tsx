@@ -357,7 +357,7 @@ export default function AnalysisPage() {
   const router = useRouter();
 const [jdText, setJdText] = useState("");
 const [resumeText, setResumeText] = useState("");
-
+const [retryKey, setRetryKey] = useState<number>(0);
 const [jdAnalysis, setJdAnalysis] =
   useState<JDAnalysis | null>(null);
 
